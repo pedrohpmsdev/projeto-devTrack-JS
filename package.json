@@ -1,0 +1,20 @@
+{
+  "name": "devtrack",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "devtrack": "./cli.js"
+  },
+  "scripts": {
+    "start:dev": "nest start --watch",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
