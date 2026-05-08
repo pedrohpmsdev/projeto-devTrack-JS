@@ -44,7 +44,7 @@ export async function salvarDB(dados) {
 }
 
 export async function adicionarTask(task) {
-  const db = lerDB();
+  const db = await lerDB();
 
   const novaTask = {
     id: randomUUID(),
@@ -65,15 +65,15 @@ export async function adicionarTask(task) {
 }
 
 export async function atualizarTask(id, campos) {
-  const db = lerDB();
+  const db = await lerDB();
 
-  const index = db.tasks.findIndex((t) => id.id === id);
+  const index = db.tasks.findIndex((t) => t.id === id);
   if (index === -1) return null;
 
   db.tasks[index] = {
     ...db.tasks[index],
     ...campos,
-    atualizadaEm: new Data().toISOString(),
+    atualizadaEm: new Date().toISOString(),
   };
 
   await salvarDB(db);
@@ -103,18 +103,17 @@ export async function listarTasks(filtro) {
       (!filtro.prioridade || task.prioridade === filtro.prioridade) &&
       (!filtro.projeto || task.projeto === filtro.projeto)
     );
-  })};
+  });
+}
 
-  export async function fazerBackup() {
-    const db = await lerDB();
+export async function fazerBackup() {
+  const db = await lerDB();
 
-    const timestamp = new Date().toISOString().split("T")[0];
-    const backupPath = path.join(
-      path.dirname(DB_PATH),
-      `devtrack-${timestamp}.json`,
-    );
+  const timestamp = new Date().toISOString().split("T")[0];
+  const backupPath = path.join(
+    path.dirname(DB_PATH),
+    `devtrack-${timestamp}.json`,
+  );
 
-    await writeFile(backupPath, JSON.stringify(db, null, 2));
-  }
-
-
+  await writeFile(backupPath, JSON.stringify(db, null, 2));
+}

@@ -12,10 +12,17 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+process.on("SIGINT", () => {
+  console.log("\n*Aplicação encerrada pelo usuário (Ctrl+C).");
+  rl.close();
+  process.exit();
+});
+
 rl.setPrompt("\nOpção escolhida: ");
+
 rl.prompt(
   console.log(
-    "\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.",
+    "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.",
   ),
 );
 
@@ -25,54 +32,62 @@ rl.on("line", (line) => {
     const prioridade = "media";
     const marcacao = [];
     console.log("\nAção selecionada: Adicionar.");
-    rl.question("Título: ", (title) => {
-      titulo = title;
-      rl.close();
-    });
-    rl.question("Prioridade: ", (priority) => {
-      prioridade = priority;
-      rl.close();
-    });
-    rl.question("Tags: ", (tags) => {
-      marcacao = tags;
-      rl.close();
-    });
+    rl.question("Título: ", (titulo) => {
+      rl.question("Prioridade: ", (prioridade) => {
+        rl.question("Tags: ", (tags) => {
+          const novaTask = {
+            titulo,
+            prioridade,
+            tags: tags.split(","),
+          };
 
-    const novaTask = {
-      titulo: titulo,
-      prioridade: prioridade,
-      tags: marcacao,
-    };
-    adicionarTask(novaTask);
-
-    console.log(
-      "\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.",
-    );
-    rl.close();
+          adicionarTask(novaTask);
+          console.log(
+            "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.",
+          );
+        });
+      });
+    });
   } else if (line == 2) {
     console.log("\nAção selecionada: Listar.");
-    rl.question("Filtro: ", (filtro) => {
-      listarTasks(filtro);
+    rl.question("Filtro: ", async (filtro) => {
+      const filtroObj = filtro.trim() ? JSON.parse(filtro) : {};
+      const tasks = await listarTasks(filtroObj);
       console.log(
-        "\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.",
+        "ID".padEnd(10),
+        "Título".padEnd(30),
+        "Prioridade".padEnd(15),
+        "Status".padEnd(15),
       );
-      rl.close();
+      console.log(
+        "-----------------------------------------------------------------------",
+      );
+      tasks.forEach((task) => {
+        console.log(
+          task.id.slice(0, 8).padEnd(10),
+          task.titulo.padEnd(30),
+          task.prioridade.padEnd(15),
+          task.status.padEnd(15),
+        );
+      });
+      console.log(
+        "-----------------------------------------------------------------------",
+      );
+      console.log(
+        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.\n",
+      );
     });
   } else if (line == 3) {
-    const identificador = null;
     const campos = {};
     console.log("\nAção selecionada: Atualizar task.");
     rl.question("id: ", (id) => {
-      identificador = id;
+      rl.question("status: ", (status) => {
+        atualizarTask(id, { status: status });
+        console.log(
+          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.",
+        );
+      });
     });
-    rl.question("fields: ", (fields) => {
-      campos = JSON.parse(fields);
-    });
-    atualizarTask(identificador, campos);
-    console.log(
-      "\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair.",
-    );
-    rl.close();
   } else if (line == 4) {
     console.log("Saindo...");
     rl.close();
