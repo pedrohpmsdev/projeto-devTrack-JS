@@ -11,9 +11,14 @@
   },
   "scripts": {
     "start": "node cli.js",
+    "dev": "node cli.js",
+    "test": "node run_testes.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "json2csv": "^6.0.0-alpha.2"
+  }
 }

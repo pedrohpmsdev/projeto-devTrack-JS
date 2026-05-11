@@ -13,14 +13,11 @@ import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
-
-//Tarefa 2
+import { error } from "console";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, "../../data/devtrack.json");
-
-lerDB("/src/storage/1.js");
 
 export async function lerDB() {
   try {
@@ -52,7 +49,7 @@ export async function adicionarTask(task) {
     descricao: task.descricao || "",
     status: task.status || "pendente",
     prioridade: task.prioridade || "media",
-    projeto: task.projeto || null,
+    projeto: task.projeto || "",
     tags: task.tags || [],
     criadaEm: new Date().toISOString(),
     atualizadaEm: new Date().toISOString(),
@@ -68,7 +65,7 @@ export async function atualizarTask(id, campos) {
   const db = await lerDB();
 
   const index = db.tasks.findIndex((t) => t.id === id);
-  if (index === -1) return null;
+  if (index === -1) throw error;
 
   db.tasks[index] = {
     ...db.tasks[index],
@@ -117,3 +114,5 @@ export async function fazerBackup() {
 
   await writeFile(backupPath, JSON.stringify(db, null, 2));
 }
+
+fazerBackup();
