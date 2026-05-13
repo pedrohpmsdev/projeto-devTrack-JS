@@ -65,7 +65,7 @@ export async function atualizarTask(id, campos) {
   const db = await lerDB();
 
   const index = db.tasks.findIndex((t) => t.id === id);
-  if (index === -1) throw error;
+  if (index === -1) throw error;  
 
   db.tasks[index] = {
     ...db.tasks[index],
