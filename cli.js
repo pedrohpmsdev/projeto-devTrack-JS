@@ -4,9 +4,11 @@ console.log("DevTrack v1.0");
 console.log("Node:", process.version);
 console.log("Plataforma:", process.platform);
 
+import "dotenv/config";
 import readline from "node:readline";
 import { adicionarTask, atualizarTask, listarTasks } from "./src/storage/db.js";
 import { exportarCSV, exportarLogComprimido } from "./src/services/export.js";
+import { buscarIssuesGithub } from "./src/services/github.js";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -23,7 +25,7 @@ rl.setPrompt("\nOpção escolhida: ");
 
 rl.prompt(
   console.log(
-    "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido.",
+    "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
   ),
 );
 
@@ -44,7 +46,7 @@ rl.on("line", (line) => {
 
           adicionarTask(novaTask);
           console.log(
-            "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido.",
+            "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
           );
         });
       });
@@ -75,17 +77,17 @@ rl.on("line", (line) => {
         "-----------------------------------------------------------------------",
       );
       console.log(
-        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido.",
+        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
       );
     });
   } else if (line == 3) {
     const campos = {};
     console.log("\nAção selecionada: Atualizar task.");
     rl.question("id: ", (id) => {
-      rl.question("status: ", (status) => {
+      rl.question("Status: ", (status) => {
         atualizarTask(id, { status: status });
         console.log(
-          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido.",
+          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
         );
       });
     });
@@ -95,20 +97,34 @@ rl.on("line", (line) => {
     process.exit();
   } else if (line == 5) {
     console.log("\nAção selecionada: Exporta CSV.");
-    rl.question("filtro: ", (filtro) => {
-      rl.question("caminhoSaida: ", (caminhoSaida) => {
+    rl.question("Filtro: ", (filtro) => {
+      rl.question("Caminho de Saída: ", (caminhoSaida) => {
         exportarCSV(filtro, caminhoSaida);
         console.log(
-          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido.",
+          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
         );
       });
     });
   } else if (line == 6) {
     console.log("\nAção selecionada: Exportar log comprimido.");
-    rl.question("caminhoSaida: ", (caminhoSaida) => {
+    rl.question("Caminho de Saída: ", (caminhoSaida) => {
       exportarLogComprimido(caminhoSaida);
       console.log(
-        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido.",
+        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+      );
+    });
+  } else if (line == 7) {
+    console.log("\nAção selecionada: Importar issues do GitHub.");
+    rl.question("Link do Repositório: ", async (repo) => {
+      const resultado = await buscarIssuesGithub(
+        repo,
+        process.env.GITHUB_TOKEN,
+      );
+
+      console.log(resultado.issues);
+      console.log(`\nTem próxima página? ${resultado.hasNextPage}\n`);
+      console.log(
+        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
       );
     });
   } else {
