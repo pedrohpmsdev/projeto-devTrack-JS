@@ -1,6 +1,6 @@
 export async function buscarIssuesGithub(repo, token, page = 1) {
-  const url =
-    "https://github.com/pedrohpmsdev?repositories/{repo}/issues?state=open&per;_page=20&page;={page}";
+
+  const url = `https://api.github.com/repos/${repo}/issues?state=open&per_page=20&page=${page}`;
 
   const myInit = {
     method: "GET",
@@ -8,7 +8,7 @@ export async function buscarIssuesGithub(repo, token, page = 1) {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github.v3+json",
       "User-Agent": "DevTrack/1.0",
-    }
+    },
   };
 
   const resposta = await fetch(url, myInit);
@@ -18,7 +18,7 @@ export async function buscarIssuesGithub(repo, token, page = 1) {
     throw new Error(`Repositório "${repo}" não encontrado`);
   if (resposta.status === 403) {
     const reset = resposta.headers.get("X-RateLimit-Reset");
-    if (!reset) {
+    if (reset) {
       const horario = new Date(reset * 1000);
       throw new Error(`Rate limit atingido. Tente novamente em ${horario}`);
     }
@@ -27,9 +27,9 @@ export async function buscarIssuesGithub(repo, token, page = 1) {
     throw new Error(`HTTP ${resposta.status}: ${resposta.statusText}`);
 
   const issues = await resposta.json();
-  const link = await resposta.headers.get("Link");
+  const link = resposta.headers.get("Link");
 
-  const hasNextPage = link?.includes('rel="next"');
+  const hasNextPage = link?.includes('rel="next"') || false;
 
   const tarefas = issues.map((issue) => ({
     titulo: issue.title,

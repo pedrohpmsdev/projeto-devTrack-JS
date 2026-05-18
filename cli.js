@@ -9,6 +9,8 @@ import readline from "node:readline";
 import { adicionarTask, atualizarTask, listarTasks } from "./src/storage/db.js";
 import { exportarCSV, exportarLogComprimido } from "./src/services/export.js";
 import { buscarIssuesGithub } from "./src/services/github.js";
+import { criarBranchDaTarefa } from "./src/services/git.js";
+
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -25,7 +27,7 @@ rl.setPrompt("\nOpção escolhida: ");
 
 rl.prompt(
   console.log(
-    "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+    "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
   ),
 );
 
@@ -46,7 +48,7 @@ rl.on("line", (line) => {
 
           adicionarTask(novaTask);
           console.log(
-            "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+            "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
           );
         });
       });
@@ -77,7 +79,7 @@ rl.on("line", (line) => {
         "-----------------------------------------------------------------------",
       );
       console.log(
-        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
       );
     });
   } else if (line == 3) {
@@ -87,7 +89,7 @@ rl.on("line", (line) => {
       rl.question("Status: ", (status) => {
         atualizarTask(id, { status: status });
         console.log(
-          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
         );
       });
     });
@@ -101,7 +103,7 @@ rl.on("line", (line) => {
       rl.question("Caminho de Saída: ", (caminhoSaida) => {
         exportarCSV(filtro, caminhoSaida);
         console.log(
-          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
         );
       });
     });
@@ -110,7 +112,7 @@ rl.on("line", (line) => {
     rl.question("Caminho de Saída: ", (caminhoSaida) => {
       exportarLogComprimido(caminhoSaida);
       console.log(
-        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
       );
     });
   } else if (line == 7) {
@@ -124,8 +126,18 @@ rl.on("line", (line) => {
       console.log(resultado.issues);
       console.log(`\nTem próxima página? ${resultado.hasNextPage}\n`);
       console.log(
-        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub. ",
+        "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
       );
+    });
+  } else if (line == 8) {
+    console.log("\nAção selecionada: Importar issues do GitHub.");
+    rl.question("Id: ", async (id) => {
+      rl.question("Título: ", async (titulo) => {
+        criarBranchDaTarefa(id, titulo); //ver só se n é sempre um valor fixo
+        console.log(
+          "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
+        );
+      });
     });
   } else {
     console.log("\nValor inválido, tente novamente.");
