@@ -13,16 +13,12 @@ import { criarBranchDaTarefa } from "./src/services/git.js";
 import { Command } from "commander";
 import chalk from "chalk";
 
-const program = new Command()
+const program = new Command();
 
+program
   .name("devtrack")
   .description("CLI para gerenciamento de projetos")
   .version("1.0.0");
-
-// const rl = readline.createInterface({
-//   input: process.stdin,
-//   output: process.stdout,
-// });
 
 process.on("SIGINT", () => {
   console.log(chalk.green("\n*Aplicação encerrada pelo usuário (Ctrl+C)."));
@@ -30,23 +26,16 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-// rl.setPrompt("\nOpção escolhida: ");
-
-// rl.prompt(
-//   console.log(chalk.gray(
-//     "\n==========MENU==========\n\nEscolha uma opção:\n 1. Adicionar;\n 2. Listar;\n 3. Atualizar status;\n 4. Sair;\n 5. Exportar CSV;\n 6. Exportar log comprido;\n 7. Importar issues do GitHub;\n 8. Vincular tarefa à branch atual.",
-//   )),
-// );
-
 const titulo = null;
 const prioridade = "media";
-const marcacao = [];
 program
   .command("add <titulo>")
   .description("Adiciona uma nova tarefa")
   .option("-p, --prioridade <n>", "alta|media|baixa", "media")
-  .option("-t, --tags <tags...>", "tags da tarefa")
+  .option("-t, --tags <tags>", "tags da tarefa")
   .option("-P, --projeto <nome>", "projeto associado")
+    .option("-d, --descricao <descricao>", "descricao")
+
   .action(async (titulo, opts) => {
     console.log(chalk.green("\nAção selecionada: Adicionar."));
     const novaTask = {
@@ -54,17 +43,18 @@ program
       prioridade: opts.prioridade,
       tags: opts.tags.split(",") | [],
       projeto: opts.projeto,
+      descricao?: opts.descricao
     };
     await adicionarTask(novaTask);
   });
 
-program.parse(process.argv);
 program
   .command("listar")
   .description("listar tarefas")
   .option("-p, --prioridade <n>", "alta|media|baixa", "media")
-  .option("-s, --status <nome>", "status")
+  .option("-s", "--status <status>")
   .option("-P, --projeto <nome>", "projeto associado")
+
 
   .action(async (filtro) => {
     const filtroObj = filtro.trim() ? JSON.parse(filtro) : {};
@@ -94,7 +84,6 @@ program
     console.log(
       "-----------------------------------------------------------------------",
     );
-    program.parse(process.argv);
   });
 
 program
@@ -107,7 +96,6 @@ program
     console.log(chalk.green("\nAção selecionada: Atualizar task."));
 
     atualizarTask(id, { status: status });
-    program.parse(process.argv);
   });
 
 program.command("exit").action(async () => {
@@ -122,7 +110,6 @@ program
   .action(async (filtro, caminhoSaida) => {
     console.log(chalk.green("\nAção selecionada: Exporta CSV."));
     exportarCSV(filtro, caminhoSaida);
-    program.parse(process.argv);
   });
 
 program
@@ -132,7 +119,6 @@ program
   .action(async (caminhoSaida) => {
     console.log(chalk.green("\nAção selecionada: Exportar log comprimido."));
     exportarLogComprimido(caminhoSaida);
-    program.parse(process.argv);
   });
 program
   .command("importIssues")
@@ -144,7 +130,6 @@ program
 
     console.log(chalk.gray(resultado.issues));
     console.log(chalk.gray(`\nTem próxima página? ${resultado.hasNextPage}\n`));
-    program.parse(process.argv);
   });
 program
   .command("vincBranch")
@@ -156,8 +141,9 @@ program
       chalk.green("\nAção selecionada: Vincular tarefa à branch atual."),
     );
     criarBranchDaTarefa(id, titulo);
-    program.parse(process.argv);
   });
+
+program.parse();
 
 const data = {
   id: 123,
