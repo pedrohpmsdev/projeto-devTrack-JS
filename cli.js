@@ -19,6 +19,7 @@ import { criarBranchDaTarefa } from "./src/services/git.js";
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
+import inquirer from "inquirer";
 
 const program = new Command();
 
@@ -235,74 +236,80 @@ program
   });
 
 program
-  .command("devtrack new")
-  .option("")
-  .option("")
-  .option("")
-  .option("")
-  .action(async (opts) => {
+  .command("new")
+  .description("Criar nova task no modo guiado")
+  .action(async () => {
     try {
       const db = await lerDB();
 
       const projetos = [
-        new Set(db.task.map((task) => task.projeto).filter(boolean)),
+        ...new Set(
+          db.tasks
+            .map((task) => task.projeto)
+            .filter(Boolean),
+        ),
       ];
 
-      const respostas = inquirer.prompt([
+      const respostas = await inquirer.prompt([
         {
           type: "input",
           name: "titulo",
           message: "Título da tarefa:",
           validate(input) {
-            if (input.length >= 3) {
+            if (input.trim().length < 3) {
               return "Título deve ter ao menos 3 caracteres";
             }
-            if (input.length <= 100) {
-              return "Título deve ter mo máximo 100 caracteres";
+
+            if (input.trim().length > 100) {
+              return "Título deve ter no máximo 100 caracteres";
             }
 
             return true;
           },
         },
-        { type: "input", name: "descricao", message: "Descrição da tarefa" },
+
         {
-          type: list,
+          type: "input",
+          name: "descricao",
+          message: "Descrição da tarefa:",
+        },
+
+        {
+          type: "list",
           name: "prioridade",
-          message: "Prioridade",
+          message: "Prioridade:",
           choices: ["alta", "media", "baixa"],
         },
+
         {
-          type: list,
+          type: "list",
           name: "projeto",
-          message: "Projeto",
+          message: "Projeto:",
           choices: [...projetos, "Criar novo projeto"],
         },
+
         {
           type: "checkbox",
           name: "tags",
-          message: "Tags",
+          message: "Tags:",
           choices: ["frontend", "backend", "bug", "feature"],
-        },
-        {
-          type: "confirm",
-          name: "confirmar",
-          message: "Criar tarefa?",
-          default: true,
         },
       ]);
 
-      let projeto = respostas.projeto;
+      let projetoFinal = respostas.projeto;
 
-      if (projeto === "Criar novo projeto") {
-        const novoProjeto = inquirer.promptO([
+      if (respostas.projeto === "Criar novo projeto") {
+        const novoProjeto = await inquirer.prompt([
           {
             type: "input",
             name: "nomeProjeto",
-            message: "Nome do novo projeto: ",
+            message: "Nome do novo projeto:",
+
             validate(input) {
               if (!input.trim()) {
                 return "Nome inválido";
               }
+
               return true;
             },
           },
@@ -310,6 +317,7 @@ program
 
         projetoFinal = novoProjeto.nomeProjeto;
       }
+
       console.log(chalk.gray("\n========== RESUMO ==========\n"));
 
       console.log(chalk.cyan("Título:"), respostas.titulo);
@@ -320,7 +328,12 @@ program
 
       console.log(chalk.cyan("Projeto:"), projetoFinal);
 
-      console.log(chalk.cyan("Tags:"), respostas.tags.join(", "));
+      console.log(
+        chalk.cyan("Tags:"),
+        respostas.tags.length > 0
+          ? respostas.tags.join(", ")
+          : "Nenhuma",
+      );
 
       console.log(chalk.gray("\n============================\n"));
 
@@ -363,7 +376,10 @@ program
       );
     } catch (e) {
       if (e.name === "ExitPromptError") {
-        console.log(chalk.yellow("\nOperação cancelada pelo usuário."));
+        console.log(
+          chalk.yellow("\nOperação cancelada pelo usuário."),
+        );
+
         process.exit(0);
       }
 
