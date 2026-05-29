@@ -133,7 +133,7 @@ const server = http.createServer((req, res) => {
       res.writeHead(404, {'content-type':"text/plane"});
       const end = Date.now() - start;
       console.log(`[${metodo}] ${rota} -> 404 ${end}ms`);
-      return es.end("Task not found");
+      return res.end("Task not found");
     }
   }
 

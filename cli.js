@@ -20,6 +20,7 @@ import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import inquirer from "inquirer";
+import os from "os";
 
 const program = new Command();
 
@@ -243,11 +244,7 @@ program
       const db = await lerDB();
 
       const projetos = [
-        ...new Set(
-          db.tasks
-            .map((task) => task.projeto)
-            .filter(Boolean),
-        ),
+        ...new Set(db.tasks.map((task) => task.projeto).filter(Boolean)),
       ];
 
       const respostas = await inquirer.prompt([
@@ -330,9 +327,7 @@ program
 
       console.log(
         chalk.cyan("Tags:"),
-        respostas.tags.length > 0
-          ? respostas.tags.join(", ")
-          : "Nenhuma",
+        respostas.tags.length > 0 ? respostas.tags.join(", ") : "Nenhuma",
       );
 
       console.log(chalk.gray("\n============================\n"));
@@ -376,9 +371,7 @@ program
       );
     } catch (e) {
       if (e.name === "ExitPromptError") {
-        console.log(
-          chalk.yellow("\nOperação cancelada pelo usuário."),
-        );
+        console.log(chalk.yellow("\nOperação cancelada pelo usuário."));
 
         process.exit(0);
       }
@@ -386,6 +379,16 @@ program
       console.log(chalk.red("\nErro inesperado"));
       console.log(chalk.red(e.message));
     }
+  });
+
+program
+  .command("analyze")
+  .description(
+    "lista arquivos .log e .csv e os processa em paralelo com Worker Threads",
+  )
+  .action(async () => {
+    try {
+    } catch (err) {}
   });
 
 process.on("SIGINT", () => {
@@ -405,4 +408,30 @@ if (!process.stdout.isTTY) {
   console.log(JSON.stringify(data));
 } else {
   console.log(`${data.message} (ID: ${data.id})`);
+}
+
+async function processarEmParalelo(lotes) {
+  const maxWorkers = os.cpus().length;
+  const resultados = [];
+
+  for (let i = 0; i < lotes.length; i += maxWorkers) {
+    const batch = lotes.slice(i, i + maxWorkers);
+    const promises = batch.map((lotes) => executarWorker(lote));
+    resultados.push(...(await Promise.all(promises)));
+  }
+
+  return resultados;
+}
+
+function executarWorker(dados) {
+  return new Promise((resolve, reject) => {
+    const w = new Worker(new URL("./worker.js", import.meta.url), {
+      workerData: dados,
+    });
+    w.on("message", resolve);
+    w.on("error", reject);
+    w.on("exit", (code) => {
+      if (code !== 0) reject(new Error(`Worker saiu com código ${code}`));
+    });
+  });
 }
