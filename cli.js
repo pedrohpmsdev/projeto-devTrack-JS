@@ -4,6 +4,8 @@ console.log("DevTrack v1.0");
 console.log("Node:", process.version);
 console.log("Plataforma:", process.platform);
 
+import fs from "fs";
+import path from "node:path";
 import "dotenv/config";
 import readline from "node:readline";
 import {
@@ -28,6 +30,10 @@ program
   .name("devtrack")
   .description("CLI para gerenciamento de projetos")
   .version("1.0.0");
+
+// fs.readdir(path.join("plugins")).then((files) => {
+//   console.log(files);
+// }); Usar importação dinâmica com função import. Descobrir como fazer para importar todos os arquivos da pasta assim
 
 process.on("SIGINT", () => {
   console.log(chalk.green("\n*Aplicação encerrada pelo usuário (Ctrl+C)."));
@@ -386,9 +392,125 @@ program
   .description(
     "lista arquivos .log e .csv e os processa em paralelo com Worker Threads",
   )
-  .action(async () => {
+  .option("-d, --dir <diretorio>", "diretório para escanear", ".")
+  .action(async (opts) => {
+    const inicio = performance.now();
+
     try {
-    } catch (err) {}
+      const entradas = await fs.readdir(opts.dir, { withFileTypes: true });
+
+      const arquivos = entradas
+        .filter(
+          (e) =>
+            e.isFile() && (e.name.endsWith(".log") || e.name.endsWith(".csv")),
+        )
+        .map((e) => ({
+          arquivo: path.join(opts.dir, e.name),
+          tipo: path.extname(e.name).slice(1),
+        }));
+
+      if (arquivos.length === 0) {
+        console.log(chalk.yellow("\nNenhum arquivo .log ou .csv encontrado."));
+        return;
+      }
+
+      console.log(
+        chalk.cyan(
+          `\nEncontrados ${arquivos.length} arquivo(s). Processando...\n`,
+        ),
+      );
+
+      const maxWorkers = os.cpus().length;
+      const resultados = [];
+      let concluidos = 0;
+
+      for (let i = 0; i < arquivos.length; i += maxWorkers) {
+        const lote = arquivos.slice(i, i + maxWorkers);
+
+        const promises = lote.map((item) =>
+          executarWorker(item).then((resultado) => {
+            concluidos++;
+            process.stdout.write(
+              chalk.gray(
+                `\rProcessando ${concluidos}/${arquivos.length} arquivos...`,
+              ),
+            );
+            return resultado;
+          }),
+        );
+
+        const settled = await Promise.allSettled(promises);
+
+        settled.forEach((s) => {
+          if (s.status === "fulfilled") {
+            resultados.push(s.value);
+          } else {
+            resultados.push({
+              erros: s.reason?.message ?? "Erro desconhecido",
+            });
+          }
+        });
+      }
+
+      const fim = performance.now();
+      const tempoTotal = ((fim - inicio) / 1000).toFixed(3);
+
+      const totalLinhas = resultados.reduce(
+        (acc, r) => acc + (r.linhas ?? 0),
+        0,
+      );
+      const totalBytes = resultados.reduce(
+        (acc, r) => acc + (r.tamanhoBytes ?? 0),
+        0,
+      );
+      const totalPalavras = resultados.reduce(
+        (acc, r) => acc + (r.palavras ?? 0),
+        0,
+      );
+      const comErro = resultados.filter((r) => r.erros).length;
+
+      console.log("\n");
+
+      resultados.forEach((r) => {
+        if (r.erros) {
+          console.log(
+            chalk.red(
+              `${String(r.arquivo ?? "?").padEnd(30)} ERRO: ${r.erros}`,
+            ),
+          );
+        } else {
+          console.log(
+            chalk.white(
+              `${path.basename(r.arquivo).padEnd(30)} ${r.tipo.padEnd(6)} ${String(r.linhas).padEnd(10)} ${String(r.palavras).padEnd(12)} ${r.tamanhoBytes}`,
+            ),
+          );
+        }
+      });
+      console.log(
+        chalk.cyan(`  Total de arquivos : `) + chalk.white(arquivos.length),
+      );
+      console.log(
+        chalk.cyan(`  Total de linhas   : `) + chalk.white(totalLinhas),
+      );
+      console.log(
+        chalk.cyan(`  Tamanho total     : `) +
+          chalk.white(`${(totalBytes / 1024).toFixed(2)} KB`),
+      );
+      console.log(
+        chalk.cyan(`  Tempo total       : `) + chalk.white(`${tempoTotal}s`),
+      );
+      console.log(
+        chalk.cyan(`  Workers usados    : `) +
+          chalk.white(
+            `${Math.min(maxWorkers, arquivos.length)} (máx ${maxWorkers})`,
+          ),
+      );
+      if (comErro > 0) {
+        console.log(chalk.red(`  Arquivos com erro : ${comErro}`));
+      }
+    } catch (err) {
+      console.error(chalk.red("\nErro no comando analyze:"), err.message);
+    }
   });
 
 process.on("SIGINT", () => {
