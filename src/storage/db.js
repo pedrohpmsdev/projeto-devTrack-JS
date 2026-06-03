@@ -19,6 +19,37 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, "../../data/devtrack.json");
 
+class LRUCache {
+  #cache;
+  #capacity;
+
+  constructor(capacity) {
+    this.#capacity = capacity;
+    this.cache = new Map();
+  }
+
+  get(chave) {
+    if (!this.#cache.has(chave)) return undefined;
+    const valor = this.#chave.get(chave);
+    this.#cache.delete(chave);
+    this.#cache.set(chave, valor);
+    return valor;
+  }
+
+  set(chave, valor) {
+    if (this.#cache.has(chave)) this.#cache.delete(chave);
+    else if (this.#cache.size >= this.#capacity) {
+      const maisAntigo = this.#cache.keys().next().value;
+      this.#cache.delete(maisAntigo);
+    }
+    this.#cache.set(chave, valor);
+  }
+
+  get size() {
+    return this.#cache.size;
+  }
+}
+
 export async function lerDB() {
   try {
     if (!existsSync(DB_PATH)) {
@@ -65,7 +96,7 @@ export async function atualizarTask(id, campos) {
   const db = await lerDB();
 
   const index = db.tasks.findIndex((t) => t.id === id);
-  if (index === -1) throw error;  
+  if (index === -1) throw error;
 
   db.tasks[index] = {
     ...db.tasks[index],

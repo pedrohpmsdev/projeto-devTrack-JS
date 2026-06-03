@@ -31,9 +31,11 @@ program
   .description("CLI para gerenciamento de projetos")
   .version("1.0.0");
 
-// fs.readdir(path.join("plugins")).then((files) => {
-//   console.log(files);
-// }); Usar importação dinâmica com função import. Descobrir como fazer para importar todos os arquivos da pasta assim
+// fs.readdir(path.join("/", "Users", "lorai", "devTrack", "plugins")).then((files) => {
+//   files.forEach(file => {
+//     import(file);
+//   }) 
+// }); 
 
 process.on("SIGINT", () => {
   console.log(chalk.green("\n*Aplicação encerrada pelo usuário (Ctrl+C)."));
