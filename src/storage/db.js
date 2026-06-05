@@ -13,11 +13,52 @@ import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
-import { error } from "console";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, "../../data/devtrack.json");
+
+const cache = {
+  data: null,
+  timestamp: 0,
+};
+
+const CACHE_TTL = 500;  
+
+function cacheValido() {
+  return cache.data !== null && (Date.now() - cache.timestamp) < CACHE_TTL;
+}
+
+function invalidarCache() {
+  cache.timestamp = 0;
+  process.env.DEBUG?.includes("devtrack") && console.debug("[db] Cache invalidado");
+}
+
+let watcher = null;
+let debounceTimer = null;
+
+export function iniciarWatcher() {
+  if (watcher) return;  
+
+  watcher = fs.watch(DB_PATH, (evento) => {
+    if (evento === "change") {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        invalidarCache();
+      }, 50);
+    }
+  });
+
+  watcher.on("error", (err) => {
+    console.error("[db] Erro no watcher:", err.message);
+  });
+}
+
+export function fecharWatcher() {
+  clearTimeout(debounceTimer);
+  watcher?.close();
+  watcher = null;
+}
 
 class LRUCache {
   #cache;
@@ -25,12 +66,12 @@ class LRUCache {
 
   constructor(capacity) {
     this.#capacity = capacity;
-    this.cache = new Map();
+    this.#cache = new Map();  
   }
 
   get(chave) {
     if (!this.#cache.has(chave)) return undefined;
-    const valor = this.#chave.get(chave);
+    const valor = this.#cache.get(chave);  
     this.#cache.delete(chave);
     this.#cache.set(chave, valor);
     return valor;
@@ -51,14 +92,29 @@ class LRUCache {
 }
 
 export async function lerDB() {
+  if (cacheValido()) {
+    process.env.DEBUG?.includes("devtrack") && console.debug("[db] Cache hit");
+    return cache.data;
+  }
+
   try {
     if (!existsSync(DB_PATH)) {
       const estrutura = { tasks: [] };
-      await fs.writeFile(DB_PATH, JSON.stringify(estrutura, null, 2));
+      await writeFile(DB_PATH, JSON.stringify(estrutura, null, 2));
+      cache.data = estrutura;
+      cache.timestamp = Date.now();
       return estrutura;
     }
+
     const texto = await readFile(DB_PATH, "utf-8");
-    return JSON.parse(texto);
+    const dados = JSON.parse(texto);
+
+    cache.data = dados;
+    cache.timestamp = Date.now();
+
+    process.env.DEBUG?.includes("devtrack") && console.debug("[db] Cache atualizado do disco");
+
+    return dados;
   } catch (err) {
     if (err.code === "ENOENT") return null;
     throw err;
@@ -69,6 +125,8 @@ export async function salvarDB(dados) {
   const tmp = DB_PATH + ".tmp";
   await writeFile(tmp, JSON.stringify(dados, null, 2), "utf-8");
   await rename(tmp, DB_PATH);
+  cache.data = dados;
+  cache.timestamp = Date.now();
 }
 
 export async function adicionarTask(task) {
@@ -88,7 +146,6 @@ export async function adicionarTask(task) {
 
   db.tasks.push(novaTask);
   await salvarDB(db);
-
   return novaTask;
 }
 
@@ -96,7 +153,7 @@ export async function atualizarTask(id, campos) {
   const db = await lerDB();
 
   const index = db.tasks.findIndex((t) => t.id === id);
-  if (index === -1) throw error;
+  if (index === -1) throw new Error(`Task ${id} não encontrada`);
 
   db.tasks[index] = {
     ...db.tasks[index],
@@ -105,20 +162,17 @@ export async function atualizarTask(id, campos) {
   };
 
   await salvarDB(db);
-
   return db.tasks[index];
 }
 
 export async function removerTask(id) {
-  const db = lerDB();
+  const db = await lerDB();  
 
   const novaLista = db.tasks.filter((t) => t.id !== id);
-
   if (novaLista.length === db.tasks.length) return false;
 
   db.tasks = novaLista;
   await salvarDB(db);
-
   return true;
 }
 
@@ -145,5 +199,3 @@ export async function fazerBackup() {
 
   await writeFile(backupPath, JSON.stringify(db, null, 2));
 }
-
-fazerBackup();

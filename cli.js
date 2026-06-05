@@ -31,11 +31,50 @@ program
   .description("CLI para gerenciamento de projetos")
   .version("1.0.0");
 
-// fs.readdir(path.join("/", "Users", "lorai", "devTrack", "plugins")).then((files) => {
-//   files.forEach(file => {
-//     import(file);
-//   }) 
-// }); 
+async function carregarPlugins() {
+  const pluginsDir = path.join(
+    path.dirname(new URL(import.meta.url).pathname),
+    "plugins",
+  );
+
+  let arquivos = [];
+  try {
+    arquivos = await fs.promises.readdir(pluginsDir);
+  } catch {
+    return;
+  }
+
+  const jsFiles = arquivos.filter((f) => f.endsWith(".js"));
+
+  for (const file of jsFiles) {
+    const url = new URL(`./plugins/${file}`, import.meta.url);
+    try {
+      const mod = await import(url);
+      const plugin = mod.default;
+
+      if (!plugin.nome || !plugin?.comandos) {
+        console.log(
+          chalk.yellow(`[Plugin] ${file}: exportação inválida, ignorado.`),
+        );
+        continue;
+      }
+
+      plugin.comandos.forEach((cmd) => program.addCommand(cmd));
+
+      try {
+        const db = await lerDB();
+        if (!db.plugins) db.plugins = [];
+        if (!db.plugins.includes(plugin.nome)) {
+          db.plugins.push(plugin.nome);
+        }
+      } catch {}
+    } catch (e) {
+      console.log(chalk.yellow(`[Plugin] ${file}: ${e.message}`));
+    }
+  }
+}
+
+await carregarPlugins();
 
 process.on("SIGINT", () => {
   console.log(chalk.green("\n*Aplicação encerrada pelo usuário (Ctrl+C)."));

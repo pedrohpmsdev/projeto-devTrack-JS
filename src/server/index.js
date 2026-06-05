@@ -1,6 +1,7 @@
 import http from "http";
 import { adicionarTask, atualizarTask, lerDB, listarTasks, removerTask } from "../storage/db";
 
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const rota = url.pathname;
@@ -145,3 +146,15 @@ const server = http.createServer((req, res) => {
 
 server.listen(3000);
 console.log("server running on port 3000");
+
+iniciarWatcher();  
+
+process.on("SIGINT", () => {
+  fecharWatcher();
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  fecharWatcher();
+  process.exit(0);
+});
