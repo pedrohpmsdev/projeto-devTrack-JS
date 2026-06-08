@@ -4,6 +4,7 @@ console.log("DevTrack v1.0");
 console.log("Node:", process.version);
 console.log("Plataforma:", process.platform);
 
+import config from "./src/utils/config.js";
 import fs from "fs";
 import path from "node:path";
 import "dotenv/config";
@@ -558,6 +559,31 @@ process.on("SIGINT", () => {
   console.log(chalk.green("\n\nAplicação encerrada pelo usuário."));
   process.exit(0);
 });
+
+program
+  .command("config")
+  .description("Lista as variáveis de ambiente")
+  .option("--list")
+  .action(async () => {
+    console.log(`\nPORTA: ${config.port}`);
+    console.log(`DATA_DIR: ${config.data_dir}`);
+    if (config.github_token === undefined || config.github_token === "") {
+      console.log("GITHUB_TOKEN: não definido");
+    } else {
+      const tamanhoToken = config.github_token;
+      console.log("GITHUB_TOKEN:", "*".repeat(tamanhoToken));
+    }
+    console.log(`MAX_WORKERS: ${config.max_workers}`);
+    console.log(`DEBUG: ${config.debug}`);
+    if (config.webhook_url === undefined || config.webhook_url === 0) {
+      console.log("WEBHOOK_URL: não definido\n");
+      
+    } else {
+      const tamanhoWebhook = config.webhook_url;
+      console.log("WEBHOOK_URL:", "*".repeat(tamanhoWebhook));
+      console.log();
+    }
+  });
 
 program.parse();
 
