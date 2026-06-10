@@ -24,6 +24,7 @@ import chalk from "chalk";
 import ora from "ora";
 import inquirer from "inquirer";
 import os from "os";
+import { redo, undo } from "./src/services/history.js";
 
 const program = new Command();
 
@@ -555,6 +556,34 @@ program
     }
   });
 
+program
+  .command("devtrack undo")
+  .description("Desfaz a última ação")
+  .action(async () => {
+    try {
+      const ultimaAcao = await undo();
+      if (ultimaAcao) {
+        return ultimaAcao;
+      }
+    } catch (err) {
+      console.error(chalk.red(err.message));
+    }
+  });
+
+program
+  .command("devtrack redo")
+  .description("Restaura a última ação")
+  .action(async () => {
+    try {
+      const ultimaAcao = await redo();
+      if (ultimaAcao) {
+        return ultimaAcao;
+      }
+    } catch (err) {
+      console.error(chalk.red(err.message));
+    }
+  });
+
 process.on("SIGINT", () => {
   console.log(chalk.green("\n\nAplicação encerrada pelo usuário."));
   process.exit(0);
@@ -577,7 +606,6 @@ program
     console.log(`DEBUG: ${config.debug}`);
     if (config.webhook_url === undefined || config.webhook_url === 0) {
       console.log("WEBHOOK_URL: não definido\n");
-      
     } else {
       const tamanhoWebhook = config.webhook_url;
       console.log("WEBHOOK_URL:", "*".repeat(tamanhoWebhook));
